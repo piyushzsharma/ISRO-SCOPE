@@ -13,6 +13,21 @@ function App() {
   const [selectedSatellite, setSelectedSatellite] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredSatellites, setFilteredSatellites] = useState([]);
+  const [darkMode, setDarkMode] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeQuickAction, setActiveQuickAction] = useState(null);
+
+  const quickActions = [
+    { id: 'refresh', label: 'Refresh Data', icon: '🔄', color: 'text-blue-400' },
+    { id: 'notifications', label: 'Notifications', icon: '🔔', color: 'text-yellow-400' },
+    { id: 'settings', label: 'Settings', icon: '⚙️', color: 'text-gray-400' },
+  ];
+
+  const handleQuickAction = (actionId) => {
+    setActiveQuickAction(actionId);
+    // Add action logic here
+    setTimeout(() => setActiveQuickAction(null), 1000);
+  };
 
   useEffect(() => {
     if (dashboardData?.satellite_positions) {
@@ -74,7 +89,7 @@ function App() {
     );
   }
 
-  const tabs = ['Global Overview', 'Satellite Deep Dive', 'Model Performance', 'System & Configuration'];
+  const tabs = ['Global Overview', 'Satellite Deep Dive', 'Model Performance'];
 
   return (
     <div className="min-h-screen bg-hud-dark">
@@ -88,7 +103,7 @@ function App() {
               </svg>
             </div>
             <h1 className="text-2xl font-bold text-hud-accent font-exo tracking-wider">
-              G-ForcAST
+              SCOPE
             </h1>
           </div>
           <div className="flex items-center space-x-4">
@@ -150,39 +165,66 @@ function App() {
         {/* KPI Cards */}
         <KPICards data={dashboardData?.kpi_data} />
 
-        {/* Main Dashboard Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-          {/* Left Column - Globe */}
-          <div className="lg:col-span-2">
-            <div className="h-full flex flex-col">
+        {/* Tab Content */}
+        {activeTab === 'Global Overview' && (
+          <div className="mt-6">
+            <div className="h-[600px] bg-hud-darker border border-hud-border rounded-lg p-4">
               <div className="mb-2 text-sm text-gray-400">
                 {searchTerm && (
                   <span>Showing {filteredSatellites.length} satellite{filteredSatellites.length !== 1 ? 's' : ''} matching "{searchTerm}"</span>
                 )}
               </div>
-              <div className="flex-1">
+              <div className="h-[calc(100%-24px)]">
                 <GlobeView 
                   satellites={searchTerm ? filteredSatellites : dashboardData?.satellite_positions}
                   selectedSatellite={selectedSatellite}
                   onSelectSatellite={setSelectedSatellite}
+                  setActiveTab={setActiveTab} 
                 />
               </div>
             </div>
           </div>
+        )}
 
-          {/* Right Column - Error History and Charts */}
-          <div className="space-y-6">
-            {/* Error History Card */}
-            <div className="bg-hud-darker border border-hud-border rounded-lg p-4 h-80">
-              <ErrorHistory satellite={selectedSatellite} />
-            </div>
-            
-            {/* Charts Section */}
-            <div className="bg-hud-darker border border-hud-border rounded-lg p-4">
-              <Charts data={dashboardData?.charts_data} />
+        {activeTab === 'Satellite Deep Dive' && (
+          <div className="mt-6">
+            <div className="bg-hud-darker border border-hud-border rounded-lg p-6">
+              <title>SCOPE Dashboard</title>
+              <meta name="description" content="SCOPE - Satellite Clock and Orbit Prediction Error Analysis" />
+              <h2 className="text-xl font-semibold text-white mb-6">Satellite Error Analysis</h2>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Select Satellite
+                </label>
+                <select
+                  className="w-full bg-hud-darker border border-hud-border text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-hud-accent"
+                  value={selectedSatellite?.id || ''}
+                  onChange={(e) => {
+                    const sat = dashboardData.satellite_positions.find(s => s.id === e.target.value);
+                    setSelectedSatellite(sat || null);
+                  }}
+                >
+                  <option value="">-- Select a satellite --</option>
+                  {dashboardData?.satellite_positions?.map((sat) => (
+                    <option key={sat.id} value={sat.id}>
+                      {sat.id} ({sat.type})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              {selectedSatellite ? (
+                <div className="h-[600px]">
+                  <ErrorHistory satellite={selectedSatellite} />
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-400">
+                  Select a satellite to view error history
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame, useLoader } from '@react-three/fiber';
 import { OrbitControls, Sphere, Line } from '@react-three/drei';
 import * as THREE from 'three';
+import PredictionPanel from './PredictionPanel';
 
 // Earth component
 const Earth = () => {
@@ -122,7 +123,17 @@ const SatelliteMarker = ({ position, color, onClick, isSelected, index }) => {
     </mesh>
   );
 };
-
+const now = new Date();
+const date = now.toLocaleDateString('en-US', { 
+  year: 'numeric', 
+  month: 'short', 
+  day: 'numeric' 
+});
+const time = now.toLocaleTimeString('en-US', { 
+  hour: '2-digit', 
+  minute: '2-digit',
+  hour12: true 
+});
 // Orbit rings
 const OrbitRings = () => {
   const innerPoints = [];
@@ -142,6 +153,7 @@ const OrbitRings = () => {
       Math.sin(theta) * 3.5
     ));
   }
+  
 
   return (
     <>
@@ -151,90 +163,107 @@ const OrbitRings = () => {
   );
 };
 
-const GlobeView = ({ satellites, selectedSatellite, onSelectSatellite }) => {
+const GlobeView = ({ satellites, selectedSatellite, onSelectSatellite ,setActiveTab}) => {
   if (!satellites) return null;
 
   return (
-    <div className="bg-hud-darker border border-hud-border rounded-lg p-4 h-[600px]">
-      <Canvas camera={{ position: [0, 0, 8], fov: 45 }}>
-        <ambientLight intensity={0.4} color="#ffffff" />
-        <directionalLight 
-          position={[5, 3, 5]} 
-          intensity={2} 
-          color="#ffffff"
-          castShadow
-        />
-        <pointLight position={[-10, -5, -5]} intensity={0.8} color="#4466ff" />
-        
-        <Earth />
-        <OrbitRings />
-        
-        {satellites.map((sat, index) => (
-          <SatelliteMarker
-            key={index}
-            index={index}
-            position={sat.position}
-            color={sat.status_color === 'green' ? '#00ff88' : '#ff4757'}
-            isSelected={selectedSatellite?.id === sat.id}
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelectSatellite(sat);
-            }}
+    <div className="flex h-[600px] gap-4">
+      {/* Earth Visualization */}
+      <div className="flex-1 bg-hud-darker border border-hud-border rounded-lg p-4 relative">
+        <Canvas camera={{ position: [0, 0, 8], fov: 45 }}>
+          <ambientLight intensity={0.4} color="#ffffff" />
+          <directionalLight 
+            position={[5, 3, 5]} 
+            intensity={2} 
+            color="#ffffff"
+            castShadow
           />
-        ))}
+          <pointLight position={[-10, -5, -5]} intensity={0.8} color="#4466ff" />
+          
+          <Earth />
+          <OrbitRings />
+          
+          {satellites.map((sat, index) => (
+            <SatelliteMarker
+              key={index}
+              index={index}
+              position={sat.position}
+              color={sat.status_color === 'green' ? '#00ff88' : '#ff4757'}
+              isSelected={selectedSatellite?.id === sat.id}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectSatellite(sat);
+              }}
+            />
+          ))}
+          
+          <OrbitControls
+            enableZoom={true}
+            enablePan={false}
+            enableRotate={true}
+            zoomSpeed={0.6}
+            rotateSpeed={0.4}
+            minDistance={5}
+            maxDistance={12}
+          />
+        </Canvas>
         
-        <OrbitControls
-          enableZoom={true}
-          enablePan={false}
-          enableRotate={true}
-          zoomSpeed={0.6}
-          rotateSpeed={0.4}
-          minDistance={5}
-          maxDistance={12}
-        />
-      </Canvas>
-      
-      {/* Satellite Info Card */}
-      {selectedSatellite && (
-        <div className="absolute bottom-8 left-8 bg-hud-darker border border-hud-accent rounded-lg p-4 w-64 shadow-hud">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <div className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold ${
-                selectedSatellite.status_color === 'red' 
-                  ? 'bg-hud-red/20 text-hud-red' 
-                  : 'bg-hud-green/20 text-hud-green'
-              }`}>
-                ● {selectedSatellite.id}
+        {/* Satellite Info Card */}
+        {selectedSatellite && (
+          <div className="absolute bottom-8 left-8 bg-hud-darker border border-hud-accent rounded-lg p-4 w-64 shadow-hud">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <div className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold ${
+                  selectedSatellite.status_color === 'red' 
+                    ? 'bg-hud-red/20 text-hud-red' 
+                    : 'bg-hud-green/20 text-hud-green'
+                }`}>
+                  ● {selectedSatellite.id}
+                </div>
+              </div>
+              <button
+                onClick={() => onSelectSatellite(null)}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Type:</span>
+                <span className="text-white font-medium">{selectedSatellite.type}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Date:</span>
+                <span className="text-hud-accent">{date}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Time:</span>
+                <span className="text-hud-accent">{time}</span>
               </div>
             </div>
-            <button
-              onClick={() => onSelectSatellite(null)}
-              className="text-gray-400 hover:text-white"
-            >
-              ✕
-            </button>
+            
+         
+<button 
+  className="w-full mt-4 bg-hud-accent/20 hover:bg-hud-accent/30 text-hud-accent py-2 rounded text-sm font-medium transition-colors"
+  onClick={() => {
+    // Set the active tab to show the prediction panel
+    // This assumes you have access to setActiveTab from App.jsx
+    // You'll need to pass it down as a prop
+    setActiveTab('Satellite Deep Dive');
+  }}
+>
+  View 7 Days Error Data
+</button>
           </div>
-          
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-400">Type:</span>
-              <span className="text-white font-medium">{selectedSatellite.type}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-400">Clock Error:</span>
-              <span className="text-hud-accent">{selectedSatellite.error_data.clock_error}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-400">Ephemeris Error:</span>
-              <span className="text-hud-accent">{selectedSatellite.error_data.ephemeris_error}</span>
-            </div>
-          </div>
-          
-          <button className="w-full mt-4 bg-hud-accent/20 hover:bg-hud-accent/30 text-hud-accent py-2 rounded text-sm font-medium transition-colors">
-            Details
-          </button>
-        </div>
-      )}
+        )}
+      </div>
+
+      {/* Prediction Panel */}
+      <div className="w-80 bg-hud-darker border border-hud-border rounded-lg p-4">
+        <PredictionPanel satellite={selectedSatellite} />
+      </div>
     </div>
   );
 };

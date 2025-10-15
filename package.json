@@ -19,5 +19,8 @@
     "chartjs"
   ],
   "author": "ISRO Team",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "csv-parser": "^3.2.0"
+  }
 }

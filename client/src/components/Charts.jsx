@@ -140,54 +140,9 @@ const Charts = ({ data }) => {
           <h3 className="text-sm font-semibold text-white font-exo">
             Error Distribution by Constellation
           </h3>
-          <button className="text-gray-500 hover:text-gray-400">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
         </div>
         <div className="h-[140px]">
           <Bar data={constellationData} options={commonOptions} />
-        </div>
-      </div>
-
-      {/* Chart 2: Error Histogram */}
-      <div className="bg-hud-darker border border-hud-border rounded-lg p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h3 className="text-sm font-semibold text-white font-exo">
-              Live Prediction Error Histogram
-            </h3>
-            <p className="text-xs text-gray-400 mt-1">(8<sup>th</sup> Day Residuals)</p>
-          </div>
-          <button className="text-gray-500 hover:text-gray-400">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <div className="h-[140px] relative">
-          <Bar data={histogramData} options={commonOptions} />
-          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-400">
-            Normality Score: <span className="text-hud-accent font-semibold">0.8</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Chart 3: Error Trend */}
-      <div className="bg-hud-darker border border-hud-border rounded-lg p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-white font-exo">
-            Predicted Error Trend (All Satellites)
-          </h3>
-          <button className="text-gray-500 hover:text-gray-400">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <div className="h-[140px]">
-          <Line data={trendData} options={commonOptions} />
         </div>
       </div>
     </div>

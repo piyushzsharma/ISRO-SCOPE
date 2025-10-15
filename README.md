@@ -1,5 +1,5 @@
-# G-ForcEST Dashboard
-## GNSS Error Forecasting and Analytical Simulation Tool
+# SCOPE Dashboard
+## Satellite Clock and Orbit Prediction Error Analysis
 
 A professional, futuristic 2D dashboard for visualizing GNSS satellite error prediction data with a Heads-Up Display (HUD) aesthetic.
 

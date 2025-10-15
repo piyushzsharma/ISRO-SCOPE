@@ -2,6 +2,80 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const XLSX = require('xlsx');
+
+// Function to read error history from CSV file
+function readErrorHistory(satelliteType) {
+  try {
+    const filePath = path.join(__dirname, 'data', 'error_history', `${satelliteType}_errors.csv`);
+    
+    if (!fs.existsSync(filePath)) {
+      console.warn(`No error history found for ${satelliteType}`);
+      return [];
+    }
+    
+    // Read the CSV file
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
+    const lines = fileContent.split('\n').filter(line => line.trim() !== '');
+    const headers = lines[0].split(',').map(h => h.trim());
+    
+    // Parse CSV rows
+    const data = [];
+    for (let i = 1; i < lines.length; i++) {
+      if (!lines[i].trim()) continue; // Skip empty lines
+      
+      // Handle CSV values that might contain commas (not in the current data, but good practice)
+      const values = lines[i].match(/\s*([^,]+|'[^']*'|"[^"]*")\s*(?:,|$)/g)
+        .map(v => v.replace(/\s*,\s*$/, '').trim().replace(/^["']|["']$/g, ''));
+      
+      const entry = {};
+      
+      headers.forEach((header, index) => {
+        entry[header] = values[index] || '';
+      });
+      
+      // Convert timestamp to Date object and parse numeric values
+      if (entry.utc_time) {
+        // Parse the date in format M/D/YYYY H:MM
+        const [datePart, timePart] = entry.utc_time.split(' ');
+        const [month, day, year] = datePart.split('/').map(Number);
+        const [hours, minutes] = timePart.split(':').map(Number);
+        
+        // Create date in UTC
+        entry.timestamp = new Date(Date.UTC(year, month - 1, day, hours, minutes));
+      }
+      
+      // Parse numeric values
+      const numericFields = ['x_error (m)', 'y_error (m)', 'z_error (m)', 'satclockerror (m)'];
+      numericFields.forEach(field => {
+        if (entry[field] !== undefined) {
+          entry[field] = parseFloat(entry[field]) || 0;
+        }
+      });
+      
+      // Calculate total position error (Euclidean distance)
+      if (entry['x_error (m)'] !== undefined && 
+          entry['y_error (m)'] !== undefined && 
+          entry['z_error (m)'] !== undefined) {
+        entry.position_error = Math.sqrt(
+          Math.pow(entry['x_error (m)'], 2) + 
+          Math.pow(entry['y_error (m)'], 2) + 
+          Math.pow(entry['z_error (m)'], 2)
+        ).toFixed(3);
+      }
+      
+      // Add satellite type
+      entry.satellite = satelliteType.toUpperCase();
+      
+      data.push(entry);
+    }
+    
+    return data;
+  } catch (error) {
+    console.error(`Error reading error history for ${satelliteType}:`, error);
+    return [];
+  }
+}
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -9,6 +83,14 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Prevent caching of API responses
+app.use((req, res, next) => {
+  res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.header('Pragma', 'no-cache');
+  res.header('Expires', '0');
+  next();
+});
 
 // Mock dashboard data
 const dashboardData = {
@@ -39,20 +121,6 @@ const dashboardData = {
       "position": [0, -75],
       "status_color": "green",
       "error_data": { "ephemeris_error": "0.12m", "clock_error": "0.4ns" }
-    },
-    {
-      "id": "MEO-03",
-      "type": "MEO",
-      "position": [51.5074, -0.1278],
-      "status_color": "green",
-      "error_data": { "ephemeris_error": "0.38m", "clock_error": "0.6ns" }
-    },
-    {
-      "id": "GEO-02",
-      "type": "GEO",
-      "position": [-33.8688, 151.2093],
-      "status_color": "green",
-      "error_data": { "ephemeris_error": "0.22m", "clock_error": "0.5ns" }
     }
   ],
   "charts_data": {
@@ -120,6 +188,49 @@ function formatLastUpdate(timestamp) {
     return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
   }
 }
+
+// API endpoint
+// Get error history for all satellites
+app.get('/api/error-history', (req, res) => {
+  console.log('Received request for error history');
+  try {
+    // Define all satellite types we expect to handle
+    const satelliteTypes = ['meo1', 'meo2', 'geo', 'gso'];
+    const responseData = {
+      success: true,
+      data: {}
+    };
+
+    // Load data for each satellite type
+    satelliteTypes.forEach(satType => {
+      const errors = readErrorHistory(satType);
+      console.log(`Loaded ${errors.length} ${satType.toUpperCase()} error records`);
+      
+      // Only include in response if we have data
+      if (errors.length > 0) {
+        responseData.data[satType] = errors;
+        console.log(`Sample ${satType} error record:`, JSON.stringify(errors[0], null, 2));
+      } else {
+        console.warn(`No data found for satellite type: ${satType}`);
+      }
+    });
+
+    // If no data was loaded for any satellite, return an error
+    if (Object.keys(responseData.data).length === 0) {
+      throw new Error('No error history data found for any satellite');
+    }
+
+    res.json(responseData);
+  } catch (error) {
+    console.error('Error in /api/error-history:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to load error history',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
 
 // API endpoint
 app.get('/api/dashboard-data', (req, res) => {

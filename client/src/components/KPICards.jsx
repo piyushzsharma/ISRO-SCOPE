@@ -5,10 +5,11 @@ const KPICards = ({ data }) => {
 
   const cards = [
     {
-      title: 'Overall System Accuracy',
-      value: `${data.accuracy}`,
-      unit: 'meters',
-      color: 'text-white',
+      title: 'Model Status',
+      value: data.model_status,
+      unit: '',
+      color: 'text-hud-green',
+      badge: true,
     },
     {
       title: 'Satellites with High Error',
@@ -16,13 +17,7 @@ const KPICards = ({ data }) => {
       unit: '',
       color: 'text-white',
     },
-    {
-      title: 'Model Status',
-      value: data.model_status,
-      unit: '',
-      color: 'text-hud-green',
-      badge: true,
-    },
+    
     {
       title: 'Last Data Update',
       value: data.last_update,
